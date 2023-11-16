@@ -1,73 +1,75 @@
-from flask import Flask, jsonify, request
-import os
 import csv
+from flask import Flask, request
+import os
+import random
 
 app = Flask(__name__)
 
-arquivo_csv = "./dados.csv"
+arquivo_csv = "tarefas.csv"
 
-if not os.path.isfile(arquivo_csv):
-    with open(arquivo_csv, mode='w', newline='') as file:
-        writer = csv.writer(file)
-        writer.writerow(["ID", "Nome", "idade", "Cidade"])
 
-def escrever_csv():
-    with open(arquivo_csv, mode='w', newline='') as file:
+def gerar_csv():
+    if not os.path.exists(arquivo_csv):
+        with open(arquivo_csv, mode="w", newline="") as file:
+            writer = csv.writer(file)
+            writer.writerow(["ID", "Tarefa", "Status"])
+
+
+def escrever_csv(tarefaList):
+    with open(arquivo_csv, mode="w", newline="") as file:
         writer = csv.writer(file)
-        writer.writerow(["ID", "Nome", "idade", "Cidade"])
-        for user in userList:
-            writer.writerow([user["ID"], user["Nome"], user["idade"], user["Cidade"]])
+        writer.writerow(["ID", "Tarefa", "Status"])
+        for tarefa in tarefaList:
+            writer.writerow([tarefa["ID"], tarefa["Tarefa"], tarefa["Status"]])
+
 
 def ler_csv():
-    with open(arquivo_csv, mode='r', newline='') as file:
+    with open(arquivo_csv, mode="r", newline="") as file:
         reader = csv.reader(file)
-        next(reader) 
-        userList = []
+        next(reader)
+        tarefaList = []
         for row in reader:
-            if len(row) >= 4:  
-                userList.append({
-                    "ID": int(row[0]),
-                    "Nome": row[1],
-                    "idade": row[2],
-                    "Cidade": row[3]
-                })
-    return userList
-
-userList = ler_csv()
+            if len(row) >= 3:
+                tarefaList.append(
+                    {"ID": int(row[0]), "Tarefa": row[1], "Status": row[2]}
+                )
+    return tarefaList
 
 
-@app.route('/', methods=['GET'])
+gerar_csv()
+
+tarefaList = ler_csv()
+
+
+@app.route("/", methods=["GET"])
 def index():
-    users = ler_csv()
-    return users
+    tarefas = ler_csv()
+    tarefas_visiveis = [tarefa for tarefa in tarefas if tarefa["Status"] != "Deletada"]
+    return tarefas_visiveis
 
-@app.route('/user', methods=['POST'])
-def login():
+
+@app.route("/task", methods=["POST"])
+def add_task():
     item = request.json
-    userList.append(item)
-    escrever_csv()
-    return userList
+    if "Tarefa" not in item:
+        return {
+            "error": "A chave 'Tarefa' é necessária para adicionar uma nova tarefa."
+        }, 400
+    item["ID"] = random.randint(1000, 9999)
+    item["Status"] = "Ativo"
+    tarefaList.append(item)
+    escrever_csv(tarefaList)
+    return tarefaList
 
-@app.route('/update/<int:key_update>', methods=['PUT'])
-def update_user(key_update):
-    users = ler_csv()
-    for user in users:
-        if user["ID"] == key_update:
-            user_data = request.get_json()
-            user.update(user_data)
-            escrever_csv()
-            return jsonify(user), 200  
-    return jsonify({"erro": "Usuario Não encontrado"}), 404
 
-@app.route('/delete/<int:user_id>', methods=['DELETE'])
-def delete_user(user_id):
-    users = ler_csv()
-    for i, user in enumerate(users):
-        if user["ID"] == user_id:
-            users.pop(i)
-            escrever_csv()
-            return jsonify({"sucesso": "Usuario deletado"}), 200
-    return jsonify({"erro": "Usuario Não encontrado"}), 404
+@app.route("/delete_task/<int:task_id>", methods=["DELETE"])
+def delete_task(task_id):
+    for tarefa in tarefaList:
+        if tarefa["ID"] == task_id:
+            tarefa["Status"] = "Deletada"
+    escrever_csv(tarefaList)
+    return tarefaList
 
-if __name__ == '__main__':
-    app.run(host="0.0.0.0", debug=True)
+
+if __name__ == "__main__":
+    app.run(debug=True)
