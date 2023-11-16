@@ -38,8 +38,8 @@ userList = ler_csv()
 
 @app.route('/', methods=['GET'])
 def index():
-    ler_csv()
-    return userList
+    users = ler_csv()
+    return users
 
 @app.route('/user', methods=['POST'])
 def login():
@@ -50,8 +50,7 @@ def login():
 
 @app.route('/update/<int:key_update>', methods=['PUT'])
 def update_user(key_update):
-    users = userList
-    ler_csv()
+    users = ler_csv()
     for user in users:
         if user["ID"] == key_update:
             user_data = request.get_json()
@@ -62,8 +61,7 @@ def update_user(key_update):
 
 @app.route('/delete/<int:user_id>', methods=['DELETE'])
 def delete_user(user_id):
-    ler_csv()
-    users = userList
+    users = ler_csv()
     for i, user in enumerate(users):
         if user["ID"] == user_id:
             users.pop(i)
