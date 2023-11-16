@@ -62,6 +62,17 @@ def add_task():
     return tarefaList
 
 
+@app.route("/task/<int:task_id>", methods=["PUT"])
+def update_task(task_id):
+    item = request.json
+    for tarefa in tarefaList:
+        if tarefa["ID"] == task_id:
+            if "Tarefa" in item:
+                tarefa["Tarefa"] = item["Tarefa"]
+    escrever_csv(tarefaList)
+    return tarefaList
+
+
 @app.route("/delete_task/<int:task_id>", methods=["DELETE"])
 def delete_task(task_id):
     for tarefa in tarefaList:
